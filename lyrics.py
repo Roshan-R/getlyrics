@@ -5,6 +5,10 @@ import requests
 from bs4 import BeautifulSoup
 import shutil
 import os
+from urllib.parse import unquote
+
+headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"}
+
 
 def get_title():
     session_bus = dbus.SessionBus()
@@ -29,7 +33,7 @@ def get_title():
 
 def clean_title(title):
     title = title.lower()
-    blacklist = ["official", "video", "mp3", "hd", "(", ")","[", "]", "audio", "ft.", "lyric", "|", "title", "song", "-", "vod", "1080p", "4k"]
+    blacklist = ["official", "video", "mp3", "hd", "(", ")","[", "]", "audio", "ft.", "lyric","lyrical", "|", "title", "song", "-", "vod", "1080p", "4k", "720p", "hd remastered"]
     for word in blacklist:
         title = title.replace(word, '')
 
@@ -43,21 +47,33 @@ def get_lyircs(title):
     soup = BeautifulSoup (r.text, features="lxml")
     mydivs = soup.find_all("div", {"class": "BNeawe tAd8D AP7Wnd"})
     if len(mydivs) < 2:
-        print(f"sorry could not find the lyrics for {title}") 
+        print("Could not find the lyrics in google") 
         mydivs = soup.find_all("div", {"class": "kCrYT"})
         links = []
         for x in mydivs:
             if x.a:
                 links.append(x.a['href'][7:])
                 for x in links:
-                    if "youtube" not in x and "download" not in x:
+                    if "youtube" not in x and "download" not in x and "ie=UTF-8" not in x:
                         link = x
                         break
 
+        link = unquote(link)
         link = link.split('&')[0]
-        os.system(f'w3m {link}')
 
+        print(f"Opening {link}")
+        os.system(f'w3m -o auto_image=FALSE {link}')
 
+        # r = requests.get(link, headers=headers)
+        # soup = BeautifulSoup (r.text, features="lxml")
+        # print(soup)
+
+        # delete_elements = ["label", "button", "a", "input", "script", "form", "header", "footer", "style", "link", "meta"]
+        # for element in delete_elements:
+            # [x.extract() for x in soup.findAll(element)]
+
+        # print(soup)
+        # print("\n".join(item for item in soup.getText().split('\n') if item))
 
         exit()
     s = mydivs[-2].text
@@ -69,5 +85,3 @@ if __name__ == '__main__':
     title = clean_title(title)
     print(f"Fetching lyrics for {title}\n")
     get_lyircs(title)
-
-
