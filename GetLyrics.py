@@ -16,6 +16,7 @@ class GetLyrics:
         parser.add_argument("-e", "--experimental", help = "Use Experimental lyrics parser", action="store_true")
         args = parser.parse_args()
 
+        self.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"}
         self.experimental = args.experimental
         self.title = self.get_title()
         self.lyrics = ""
@@ -27,8 +28,18 @@ class GetLyrics:
             self.extract_links_from_google_result()
             link = unquote(self.google_result_links[0])
             link = link.split('&')[0]
-            os.system(f'w3m -o auto_image=FALSE {link}')
-            # print(self.google_result_links)
+            if not self.experimental:
+                os.system(f'w3m -o auto_image=FALSE {link}')
+            else:
+                r = requests.get(link, headers=self.headers)
+                soup = BeautifulSoup (r.text, features="lxml")
+                delete_elements = ["label", "button", "a", "input", "script", "form", "header", "footer", "style", "link", "meta"]
+                for element in delete_elements:
+                    [x.extract() for x in soup.findAll(element)]
+
+                new = "\n".join(item for item in soup.getText().split('\n') if item)
+                for line in new.split('\n'):
+                    print(line.center(shutil.get_terminal_size().columns))
 
     def get_title(self):
         session_bus = dbus.SessionBus()
@@ -51,7 +62,7 @@ class GetLyrics:
 
     def clean_title(self):
         self.title = self.title.lower()
-        blacklist = ["official", "video", "mp3", "hd", "(", ")","[", "]", "audio", "ft.", "lyric","lyrical", "|", "title", "song", "-", "vod", "1080p", "4k", "720p", "hd remastered", "hit songs"]
+        blacklist = ["official", "video", "mp3", "hd", "(", ")","[", "]", "audio", "ft.", "lyric","lyrical", "|", "title", "song", "-", "vod", "1080p", "4k", "720p", "hd remastered", "hit songs", "full video"]
         for word in blacklist:
             self.title = self.title.replace(word, '')
 
