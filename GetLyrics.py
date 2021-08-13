@@ -31,15 +31,7 @@ class GetLyrics:
             if not self.experimental:
                 os.system(f'w3m -o auto_image=FALSE {link}')
             else:
-                r = requests.get(link, headers=self.headers)
-                soup = BeautifulSoup (r.text, features="lxml")
-                delete_elements = ["label", "button", "a", "input", "script", "form", "header", "footer", "style", "link", "meta"]
-                for element in delete_elements:
-                    [x.extract() for x in soup.findAll(element)]
-
-                new = "\n".join(item for item in soup.getText().split('\n') if item)
-                for line in new.split('\n'):
-                    print(line.center(shutil.get_terminal_size().columns))
+                self.generic_extractor(link)
 
     def get_title(self):
         session_bus = dbus.SessionBus()
@@ -101,6 +93,16 @@ class GetLyrics:
             if "youtube" not in x and "download" not in x and "ie=UTF-8" not in x:
                 clean_links.append(x)
         self.google_result_links = clean_links
+
+    def generic_extractor(self, link):
+        r = requests.get(link, headers=self.headers)
+        soup = BeautifulSoup (r.text, features="lxml")
+        delete_elements = ["label", "button", "a", "input", "script", "form", "header", "footer", "style", "link", "meta"]
+        for element in delete_elements:
+            [x.extract() for x in soup.findAll(element)]
+
+        self.lyrics = "\n".join(item for item in soup.getText().split('\n') if item)
+        self.print_lyrics()
 
 
 if __name__ == '__main__':
