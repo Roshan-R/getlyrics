@@ -50,7 +50,11 @@ class GetLyrics:
         media_properties = dbus.Interface(media_bus,
                                           "org.freedesktop.DBus.Properties")
         metadata = media_properties.Get("org.mpris.MediaPlayer2.Player", "Metadata")
-        return metadata['xesam:title']
+        title = metadata['xesam:title']
+        if not title:
+            print("Cannot fetch title")
+            exit()
+        return title
 
     def clean_title(self):
         self.title = self.title.lower()
