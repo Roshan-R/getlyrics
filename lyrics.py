@@ -1,12 +1,17 @@
 #! /usr/bin/env python3
 
-import dbus
 import requests
-from bs4 import BeautifulSoup
-import shutil
-import os
 from urllib.parse import unquote
+from bs4 import BeautifulSoup
 
+import argparse
+import os
+import sys
+import dbus
+import shutil
+
+
+ex = 0
 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"}
 
 
@@ -33,7 +38,7 @@ def get_title():
 
 def clean_title(title):
     title = title.lower()
-    blacklist = ["official", "video", "mp3", "hd", "(", ")","[", "]", "audio", "ft.", "lyric","lyrical", "|", "title", "song", "-", "vod", "1080p", "4k", "720p", "hd remastered"]
+    blacklist = ["official", "video", "mp3", "hd", "(", ")","[", "]", "audio", "ft.", "lyric","lyrical", "|", "title", "song", "-", "vod", "1080p", "4k", "720p", "hd remastered", "hit songs"]
     for word in blacklist:
         title = title.replace(word, '')
 
@@ -62,18 +67,24 @@ def get_lyircs(title):
         link = link.split('&')[0]
 
         print(f"Opening {link}")
-        os.system(f'w3m -o auto_image=FALSE {link}')
 
-        # r = requests.get(link, headers=headers)
-        # soup = BeautifulSoup (r.text, features="lxml")
-        # print(soup)
+        if ex:
+            r = requests.get(link, headers=headers)
+            soup = BeautifulSoup (r.text, features="lxml")
+            # print(soup)
 
-        # delete_elements = ["label", "button", "a", "input", "script", "form", "header", "footer", "style", "link", "meta"]
-        # for element in delete_elements:
-            # [x.extract() for x in soup.findAll(element)]
+            delete_elements = ["label", "button", "a", "input", "script", "form", "header", "footer", "style", "link", "meta"]
+            for element in delete_elements:
+                [x.extract() for x in soup.findAll(element)]
 
-        # print(soup)
-        # print("\n".join(item for item in soup.getText().split('\n') if item))
+            # print(soup)
+            new = "\n".join(item for item in soup.getText().split('\n') if item)
+            # print(new)
+            # print(soup.getText())
+            for line in new.split('\n'):
+                print(line.center(shutil.get_terminal_size().columns))
+        else:
+            os.system(f'w3m -o auto_image=FALSE {link}')
 
         exit()
     s = mydivs[-2].text
@@ -81,7 +92,14 @@ def get_lyircs(title):
         print(line.center(shutil.get_terminal_size().columns))
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Get Lyrics of currently playing song')
+    parser.add_argument("-e", "--Experimental", help = "Show Experimental lyrics parser", action="store_true")
+    args = parser.parse_args()
+
+    if args.Experimental:
+        ex = 1
+
     title = get_title()
     title = clean_title(title)
-    print(f"Fetching lyrics for {title}\n")
+    print(f"Fetching lyrics..\n")
     get_lyircs(title)
