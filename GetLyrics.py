@@ -1,14 +1,18 @@
 #! /usr/bin/env python3
 
 import requests
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
 from bs4 import BeautifulSoup
 
 import argparse
 import os
 import sys
+import importlib
 import dbus
 import shutil
+
+from sites import site_info
+import sites
 
 class GetLyrics:
     def __init__(self):
@@ -24,13 +28,23 @@ class GetLyrics:
         self.clean_title()
 
         if not self.get_google_lyrics():
-            print("Could not find the lyrics in google")
+            print("Could not find the lyrics in google\n\n")
             self.extract_links_from_google_result()
             link = unquote(self.google_result_links[0])
             link = link.split('&')[0]
             if not self.experimental:
                 os.system(f'w3m -o auto_image=FALSE {link}')
             else:
+                for x in self.google_result_links:
+                    base = urlparse(x).netloc
+                    if base in site_info.base_urls:
+                        site_name = site_info.dic[base]
+                        full_module_name = "sites." + site_name
+                        mymodule = importlib.import_module(full_module_name)
+                        r = requests.get(x.split('&')[0])
+                        soup = BeautifulSoup(r.text, features='lxml')
+                        print(mymodule.get_lyrics(soup))
+                        exit()
                 self.generic_extractor(link)
 
     def get_title(self):
@@ -58,7 +72,7 @@ class GetLyrics:
 
     def clean_title(self):
         self.title = self.title.lower()
-        blacklist = ["official", "video", "mp3", "hd", "(", ")","[", "]", "audio", "ft.", "lyric","lyrical", "|", "title", "song", "-", "vod", "1080p", "4k", "720p", "hd remastered", "hit songs", "full video"]
+        blacklist = ["official", "video", "mp3", "hd", "(", ")","[", "]", "audio", "ft.", "feat." "lyric","lyrical", "|", "title", "song", "-", "vod", "1080p", "4k", "720p", "hd remastered", "hit songs", "full video"]
         for word in blacklist:
             self.title = self.title.replace(word, '')
 
@@ -91,7 +105,6 @@ class GetLyrics:
     def clean_google_result_links(self):
         # blacklist = ["youtube", "download", "ie=UTF-8"]
         # for word in blacklist:
-
         clean_links = []
         for x in self.google_result_links:
             if "youtube" not in x and "download" not in x and "ie=UTF-8" not in x:
