@@ -28,10 +28,12 @@ class GetLyrics:
         self.clean_title()
 
         if not self.get_google_lyrics():
-            print("Could not find the lyrics in google\n\n")
+            print("Could not find the lyrics in google\n")
             self.extract_links_from_google_result()
             link = unquote(self.google_result_links[0])
             link = link.split('&')[0]
+            print(link)
+            print()
             if not self.experimental:
                 os.system(f'w3m -o auto_image=FALSE {link}')
             else:
@@ -43,7 +45,8 @@ class GetLyrics:
                         mymodule = importlib.import_module(full_module_name)
                         r = requests.get(x.split('&')[0])
                         soup = BeautifulSoup(r.text, features='lxml')
-                        print(mymodule.get_lyrics(soup))
+                        self.lyrics = mymodule.get_lyrics(soup)
+                        self.print_lyrics()
                         exit()
                 self.generic_extractor(link)
 
