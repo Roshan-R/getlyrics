@@ -27,9 +27,11 @@ class GetLyrics:
         self.google_result_links = []
         self.clean_title()
 
+
         if not self.get_google_lyrics():
             print("Could not find the lyrics in google\n")
             self.extract_links_from_google_result()
+            print(self.google_result_links)
             link = unquote(self.google_result_links[0])
             link = link.split('&')[0]
             print(link)
@@ -41,6 +43,8 @@ class GetLyrics:
                     base = urlparse(x).netloc
                     if base in site_info.base_urls:
                         site_name = site_info.dic[base]
+                        print("Using site " + site_name)
+                        print("With url " + x)
                         full_module_name = "sites." + site_name
                         mymodule = importlib.import_module(full_module_name)
                         r = requests.get(x.split('&')[0])
@@ -75,12 +79,13 @@ class GetLyrics:
 
     def clean_title(self):
         self.title = self.title.lower()
-        blacklist = ["official", "video", "mp3", "hd", "(", ")","[", "]", "audio", "ft.", "feat." "lyric","lyrical", "|", "title", "song", "-", "vod", "1080p", "4k", "720p", "hd remastered", "hit songs", "full video"]
+        blacklist = ["official", "video", "official music video", "mp3", "hd", "(", ")","[", "]", "\"",  "audio", "ft.", "feat." "lyric","lyrical", "|", "title", "song", "-", "vod", "1080p", "4k", "720p", "hd remastered", "hit songs", "full video", "bass boosted", "4k beatz", "thamil movie", "youtube"]
         for word in blacklist:
             self.title = self.title.replace(word, '')
 
         # print(title)
         self.title = ' '.join(self.title.split())
+        print(self.title)
 
     def get_google_lyrics(self):
         url = f"https://www.google.com/search?q={self.title.replace(' ', '+')}+lyrics"
