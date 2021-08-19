@@ -18,23 +18,30 @@ class GetLyrics:
     def __init__(self):
         parser = argparse.ArgumentParser(description='Get Lyrics of currently playing song')
         parser.add_argument("-e", "--experimental", help = "Use Experimental lyrics parser", action="store_true")
+        parser.add_argument("-v", "--verbose", help = "Verbose Output", action="store_true")
         args = parser.parse_args()
 
         self.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"}
         self.experimental = args.experimental
+        self.verbose = args.verbose
         self.title = self.get_title()
         self.lyrics = ""
         self.google_result_links = []
         self.clean_title()
 
-
         if not self.get_google_lyrics():
-            print("Could not find the lyrics in google\n")
-            self.extract_links_from_google_result()
-            print(self.google_result_links)
-            link = unquote(self.google_result_links[0])
-            link = link.split('&')[0]
-            print(link)
+            if self.verbose:
+                print("Could not find the lyrics in google\n")
+            try:
+                self.extract_links_from_google_result()
+                link = unquote(self.google_result_links[0])
+                link = link.split('&')[0]
+                if self.verbose:
+                    print(self.google_result_links)
+                    print(link)
+            except IndexError:
+                print("Got no result from google")
+                exit()
             print()
             if not self.experimental:
                 os.system(f'w3m -o auto_image=FALSE {link}')
@@ -43,8 +50,9 @@ class GetLyrics:
                     base = urlparse(x).netloc
                     if base in site_info.base_urls:
                         site_name = site_info.dic[base]
-                        print("Using site " + site_name)
-                        print("With url " + x)
+                        if self.verbose:
+                            print("Using site " + site_name)
+                            print("With url " + x)
                         full_module_name = "sites." + site_name
                         mymodule = importlib.import_module(full_module_name)
                         r = requests.get(x.split('&')[0])
@@ -79,7 +87,7 @@ class GetLyrics:
 
     def clean_title(self):
         self.title = self.title.lower()
-        blacklist = ["official", "video", "official music video", "mp3", "hd", "(", ")","[", "]", "\"",  "audio", "ft.", "feat." "lyric","lyrical", "|", "title", "song", "-", "vod", "1080p", "4k", "720p", "hd remastered", "hit songs", "full video", "bass boosted", "4k beatz", "thamil movie", "youtube"]
+        blacklist = ["official", "video", "official music video", "mp3", "hd", "(", ")","[", "]", "\"",  "audio", "ft.", "feat." "lyric","lyrical", "|", "song", "-", "vod", "1080p", "4k", "720p", "hd remastered", "hit songs", "full video", "bass boosted", "4k beatz", "thamil movie", "youtube"]
         for word in blacklist:
             self.title = self.title.replace(word, '')
 
